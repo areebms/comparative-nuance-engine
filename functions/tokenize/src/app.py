@@ -1,7 +1,7 @@
 import json
 import logging
 
-from scrape import scrape
+from run_tokenize import tokenize
 from shared.aws import extract_index
 
 
@@ -10,18 +10,18 @@ logger.setLevel(logging.INFO)
 
 
 def handler(event, context):
-    logger.info("Scrape request received", extra={"event": event})
+    logger.info("Tokenize request received", extra={"event": event})
     index = extract_index(event)
     if not index:
-        logger.warning("Scrape request missing index")
+        logger.warning("Tokenize request missing index")
         return {
             "statusCode": 400,
             "body": json.dumps({"error": "index is required"}),
         }
 
-    logger.info("Starting scrape", extra={"index": index})
-    scrape(index)
-    logger.info("Scrape completed", extra={"index": index})
+    logger.info("Starting tokenize", extra={"index": index})
+    tokenize(index)
+    logger.info("Tokenize completed", extra={"index": index})
 
     return {
         "statusCode": 200,

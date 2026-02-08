@@ -15,10 +15,10 @@ services:
       args:
         AWS_URI_PREFIX: ${AWS_URI_PREFIX}
 
-  lambda-generate-kvector:
-    image: ${AWS_URI_PREFIX}/${AWS_ECR_REPO}/lambda-generate-kvector:0.1
+  lambda-train-kvector:
+    image: ${AWS_URI_PREFIX}/${AWS_ECR_REPO}/lambda-train-kvector:0.1
     build:
       context: .
-      dockerfile: functions/generate-kvector/Dockerfile
+      dockerfile: functions/train-kvector/Dockerfile
       args:
         AWS_URI_PREFIX: ${AWS_URI_PREFIX}

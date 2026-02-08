@@ -1,7 +1,7 @@
 import json
 import logging
 
-from generate_kvector import generate_kvector
+from train_kvector import train_kvector
 from shared.aws import extract_index
 
 
@@ -46,5 +46,5 @@ def handler(event, context):
             "body": json.dumps({"error": "sentences is required"}),
         }
 
-    generate_kvector(index, sentences)
+    train_kvector(index, sentences)
     return {"statusCode": 200, "body": json.dumps({"status": "ok", "index": index})}

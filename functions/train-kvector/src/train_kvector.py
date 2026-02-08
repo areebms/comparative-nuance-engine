@@ -35,7 +35,7 @@ def _get_session_and_table():
     return _session, _table
 
 
-def generate_kvector(index, sentences):
+def train_kvector(index, sentences):
 
     models_dir = Path("/tmp/models")
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -95,4 +95,4 @@ if __name__ == "__main__":
             [word for word in sentence if word.isalpha() and len(word) > MIN_TOKEN_SIZE]
         )
 
-    generate_kvector(index, sentences)
+    train_kvector(index, sentences)

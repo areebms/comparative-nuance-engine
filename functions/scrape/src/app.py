@@ -1,7 +1,7 @@
 import json
 import logging
 
-from scrape import scrape
+from main import scrape
 from shared.aws import extract_index
 
 

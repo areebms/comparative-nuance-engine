@@ -1,27 +1,70 @@
-# login first if needed
-aws ecr get-login-password --region us-west-2 \
- | docker login --username AWS --password-stdin $AWS_URI_PREFIX
+#!/usr/bin/env bash
+set -e
 
-docker buildx build \
+source .env
+
+FILE="${FILE:-infra/services.yaml}"
+TAG="${TAG:-0.1}"
+REGION="${AWS_REGION}"
+export AWS_PAGER="" # Disable pager.
+
+# check required envs
+: "${AWS_URI_PREFIX:?}"
+: "${AWS_ECR_REPO:?}"
+: "${LAMBDA_ROLE_ARN:?}"
+
+# set defaults
+DEFAULT_MEMORY="$(yq e '.default.memory' "$FILE")"
+DEFAULT_TIMEOUT="$(yq e '.default.timeout' "$FILE")"
+
+echo "Logging in"
+aws ecr get-login-password --region "$REGION" \
+  | docker login --username AWS --password-stdin "$AWS_URI_PREFIX"
+
+for SERVICE in "$*"; do
+  FUNCTION="$(yq e ".services.$SERVICE.function_name" "$FILE")"
+  IMAGE="$(yq e ".services.$SERVICE.image" "$FILE")"
+  MEMORY="$(yq e ".services.$SERVICE.memory // $DEFAULT_MEMORY" "$FILE")"
+  TIMEOUT="$(yq e ".services.$SERVICE.timeout // $DEFAULT_TIMEOUT" "$FILE")"
+
+  FULL_TAG="$AWS_URI_PREFIX/$AWS_ECR_REPO/$IMAGE:$TAG"
+  ECR_REPO="$AWS_ECR_REPO/$IMAGE"
+  DOCKERFILE="functions/$FUNCTION/Dockerfile"
+
+  echo
+  echo "=== $SERVICE (fn=$FUNCTION img=$IMAGE mem=$MEMORY timeout=$TIMEOUT) ==="
+
+  docker buildx build \
   --platform linux/amd64 \
   --provenance=false \
   --sbom=false \
   --no-cache \
   --load \
-  -t $AWS_URI_PREFIX/$AWS_ECR_REPO/lambda-generate-kvector:0.1 \
-  -f functions/generate-kvector/Dockerfile .
+  -t "$FULL_TAG" \
+  -f "$DOCKERFILE" .
 
-docker run --rm -it --env-file .env --entrypoint python \
-  $AWS_URI_PREFIX/$AWS_ECR_REPO/lambda-generate-kvector:0.1 \
-  generate_kvector.py --platform-name gutenberg --platform-id 60411
+  # run tests
+  docker run --rm -it --env-file .env --entrypoint python $FULL_TAG main.py --platform-name gutenberg --platform-id 60411
 
-docker push $AWS_URI_PREFIX/$AWS_ECR_REPO/lambda-generate-kvector:0.1
+  docker push "$FULL_TAG"
 
-DIGEST=$(aws --no-cli-pager ecr describe-images \
-  --repository-name $AWS_ECR_REPO/lambda-generate-kvector \
-  --image-ids imageTag=0.1 \
-  --query 'imageDetails[0].imageDigest' --output text)
+  DIGEST="$(aws ecr describe-images --region "$REGION" \
+    --repository-name "$ECR_REPO" --image-ids "imageTag=$TAG" \
+    --query 'imageDetails[0].imageDigest' --output text)"
 
-aws --no-cli-pager lambda update-function-code \
-  --function-name generate-kvector \
-  --image-uri $AWS_URI_PREFIX/$AWS_ECR_REPO/lambda-generate-kvector@$DIGEST
+  IMAGE_URI="$AWS_URI_PREFIX/$ECR_REPO@$DIGEST"
+  
+  # TODO: Only Update if changed.
+  if aws lambda get-function --region "$REGION" --function-name "$FUNCTION" >/dev/null 2>&1; then
+    aws lambda update-function-code --region "$REGION" --function-name "$FUNCTION" --image-uri "$IMAGE_URI"
+    aws lambda update-function-configuration --region "$REGION" --function-name "$FUNCTION" --memory-size "$MEMORY" --timeout "$TIMEOUT"
+  else
+    aws lambda create-function --region "$REGION" \
+      --function-name "$FUNCTION" --package-type Image \
+      --code "ImageUri=$IMAGE_URI" --role "$LAMBDA_ROLE_ARN" \
+      --memory-size "$MEMORY" --timeout "$TIMEOUT"
+  fi
+
+  aws lambda wait function-active-v2 --region "$REGION" --function-name "$FUNCTION"
+  echo "Done: $SERVICE"
+done

@@ -1,7 +1,7 @@
 import json
 import logging
 
-from run_tokenize import tokenize
+from main import tokenize
 from shared.aws import extract_index
 
 

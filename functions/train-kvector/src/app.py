@@ -1,7 +1,7 @@
 import json
 import logging
 
-from train_kvector import train_kvector
+from main import train_kvector
 from shared.aws import extract_index
 
 

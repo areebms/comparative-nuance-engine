@@ -1,0 +1,22 @@
+# infra/services.yaml
+project: embedding-analytics
+default:
+  architecture: x86_64
+  memory: 256
+  timeout: 120
+
+services:
+  scrape:
+    function_name: scrape
+    image: lambda-scrape
+
+  tokenize:
+    function_name: tokenize
+    image: lambda-tokenize
+    memory: 512
+
+  train-kvector:
+    function_name: train-kvector
+    image: lambda-train-kvector
+    memory: 6144
+    timeout: 600

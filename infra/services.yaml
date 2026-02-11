@@ -24,3 +24,7 @@ services:
   train-kvectors:
     function_name: train-kvectors
     image: lambda-train-kvectors
+  
+  aggregate-data:
+    function_name: aggregate-data
+    image: lambda-aggregate-data

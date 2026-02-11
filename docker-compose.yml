@@ -30,3 +30,11 @@ services:
       dockerfile: functions/train-kvectors/Dockerfile
       args:
         AWS_URI_PREFIX: ${AWS_URI_PREFIX}
+
+  lambda-aggregate-data:
+    image: ${AWS_URI_PREFIX}/${AWS_ECR_REPO}/lambda-aggregate-data:0.1
+    build:
+      context: .
+      dockerfile: functions/aggregate-data/Dockerfile
+      args:
+        AWS_URI_PREFIX: ${AWS_URI_PREFIX}

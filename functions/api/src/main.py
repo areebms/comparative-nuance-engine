@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import io
 import os
 
 from gensim.models import KeyedVectors
@@ -42,10 +41,8 @@ class KeyedVectorGroup:
         )
 
     def fetch_term_stability_data(self, session):
-        text_stream = io.TextIOWrapper(
-            load_text_stream_from_s3(session, f"{self.s3_prefix}/term_stability.csv"),
-            encoding="utf-8",
-        )
+        text_stream = load_text_stream_from_s3(session, f"{self.s3_prefix}/term_stability.csv")
+
         try:
             for row in csv.DictReader(text_stream):
                 self.term_stability_data[row.pop("term")] = row

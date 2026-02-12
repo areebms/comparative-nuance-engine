@@ -84,7 +84,7 @@ def load_bytes_from_s3(session, s3_key):
 
 
 def load_text_stream_from_s3(session, s3_key):
-    body = session.resource("s3").object(S3_BUCKET, s3_key).get()["Body"]
+    body = session.resource("s3").Object(S3_BUCKET, s3_key).get()["Body"]
     return io.TextIOWrapper(body, encoding="utf-8")
 
 
@@ -125,6 +125,6 @@ def yield_sentences_from_s3(session, s3_key):
 
 def load_file_from_s3(session, s3_key):
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        session.resource("s3").object(S3_BUCKET, s3_key).download_fileobj(tmp_file)
+        session.resource("s3").Object(S3_BUCKET, s3_key).download_fileobj(tmp_file)
         tmp_file.flush()
         return tmp_file.name

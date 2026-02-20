@@ -20,7 +20,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # Allows specified origins
     allow_credentials=True,  # Allows cookies to be sent cross-origin
-    allow_methods=["GET"],  # Allows all methods (GET, POST, PUT, DELETE, etc.)
+    allow_methods=["GET", "OPTIONS"],  # Allows all methods (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],  # Allows all headers
 )
 
@@ -52,10 +52,12 @@ def books():
             "label": f"{item['author'].split(',')[0]} ({item['published_year']})",
             "author": item["author"],
             "title": item["title"],
+            "s3_aligned_data_prefix": item["s3_aligned_data_prefix"]
         }
         for item in PipelineTable(get_session()).get_all(
-            ["platform_data", "author", "published_year", "title"]
+            ["platform_data", "author", "published_year", "title", "s3_aligned_data_prefix"]
         )
+        if item.get("s3_aligned_data_prefix")
     ]
 
 handler = Mangum(app)
